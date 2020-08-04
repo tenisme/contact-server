@@ -1,18 +1,18 @@
 const express = require("express");
-// 컨트롤러에 작성한, api 함수를 가져온다.
+
 const {
-  getAllContacts,
+  getContacts,
   createContact,
   updateContact,
   deleteContact,
   searchContact,
-} = require("../controllers/contacts");
+} = require("../controllers/contact.js");
 
 const router = express.Router();
 
 router
   .route("/")
-  .get(getAllContacts)
+  .get(getContacts)
   .post(createContact)
   .put(updateContact)
   .delete(deleteContact);

@@ -1,24 +1,31 @@
+// npm 패키지 require
 const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config/config.env" });
-// 로그 찍어주는 로거다. 미들웨어 다. app.use에 추가시키는 것.
 const morgan = require("morgan");
 
-// 우리가 파일로 만든것은 항상, npm 패키지의 아래쪽에 위치
-const contacts = require("./routes/contacts");
-const users = require("./routes/users");
+// 라우터 require
+const contact = require("./router/contact.js");
+const users = require("./router/user.js");
+const share = require("./router/share_contact.js");
+
+// 기타 파일 셋팅
+const auth = require("./middleware/auth.js");
 
 const app = express();
-// Body parser 설정. 클라이언트에서 body로 데이터 보내는것 처리.
+
 app.use(express.json());
 
-// 먼저 로그 찍어주도록 미들웨어 설정.
-app.use(morgan("common"));
+app.use(morgan("dev"));
 
-// API 경로연결
-app.use("/api/v1/contacts", contacts);
 app.use("/api/v1/users", users);
+
+app.use(auth);
+app.use("/api/v1/contacts", contact);
+app.use("/api/v1/share", share);
 
 const PORT = process.env.PORT || 5300;
 
-app.listen(PORT, console.log("API SERVER"));
+app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
