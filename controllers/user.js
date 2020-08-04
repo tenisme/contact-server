@@ -8,7 +8,6 @@ const validator = require("validator");
 // 파일 참조
 const connection = require("../db/mysql_connection.js");
 const sendEmail = require("../utils/sendemail.js");
-const { reset } = require("chalk");
 
 // @desc    회원 가입 api
 // @route   POST /api/v1/users
@@ -30,21 +29,28 @@ exports.createUser = async (req, res, next) => {
     return;
   }
 
-  if (login_id)
-    if (!validator.isEmail(email)) {
-      // 이메일이 정상적인지 체크
-      res.status(400).json({
-        success: false,
-        message: "정상적인 이메일 형식으로 입력해주세요",
-      });
-      return;
-    } else if (email.length > 100) {
-      res.status(400).json({
-        success: false,
-        message: "이메일은 100자 이내로 입력해주세요",
-      });
-      return;
-    }
+  if (login_id.length > 20) {
+    res.status(400).json({
+      success: false,
+      message: "로그인 아이디는 20자 이내로 적어주세요",
+    });
+    return;
+  }
+
+  if (!validator.isEmail(email)) {
+    // 이메일이 정상적인지 체크
+    res.status(400).json({
+      success: false,
+      message: "정상적인 이메일 형식으로 입력해주세요",
+    });
+    return;
+  } else if (email.length > 100) {
+    res.status(400).json({
+      success: false,
+      message: "이메일은 100자 이내로 입력해주세요",
+    });
+    return;
+  }
 
   // 트랜잭션 셋팅
   const conn = await connection.getConnection();
@@ -97,41 +103,38 @@ exports.createUser = async (req, res, next) => {
       res.status(500).json({ success: false, message: "회원 가입 실패" });
       return;
     }
-
-    // 가입 환영 이메일 보내기
-    const message = "환영합니다";
-    try {
-      await sendEmail({
-        email: email,
-        subject: "회원가입 축하",
-        message: message,
-      });
-    } catch (e) {
-      await conn.rollback();
-      res
-        .status(500)
-        .json({ success: false, message: "EMAIL ERROR", error: e });
-      return;
-    }
-
-    // 트랜잭션 - 저장
-    await conn.commit();
-
-    res
-      .status(200)
-      .json({ success: true, token: token, result: "가입을 환영합니다" });
-
-    console.log(
-      chalk.yellowBright.bold("User join on") +
-        chalk.cyanBright(` - user_id : ${user_id}, login_id : ${login_id}`)
-    );
   } catch (e) {
     await conn.rollback();
     res.status(500).json({ success: false, message: "DB ERROR", error: e });
   }
 
+  // 가입 환영 이메일 보내기
+  const message = "환영합니다";
+  try {
+    await sendEmail({
+      email: email,
+      subject: "회원가입 축하",
+      message: message,
+    });
+  } catch (e) {
+    await conn.rollback();
+    res.status(500).json({ success: false, message: "EMAIL ERROR", error: e });
+    return;
+  }
+
+  // 트랜잭션 - 저장
+  await conn.commit();
   // 트랜잭션 - (DB) 커넥션 반환
   await conn.release();
+
+  console.log(
+    chalk.yellowBright.bold("User join on") +
+      chalk.cyanBright(` - user_id : ${user_id}, login_id : ${login_id}`)
+  );
+
+  res
+    .status(200)
+    .json({ success: true, token: token, result: "가입을 환영합니다" });
 };
 
 // @desc    로그인 api
